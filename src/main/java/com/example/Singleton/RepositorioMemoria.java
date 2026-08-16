@@ -1,13 +1,12 @@
 package com.example.Singleton;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.example.Composite.CompPropiedad;
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
 import com.example.dominio.incidentes.Incidente;
 import com.example.dominio.reservas.Reserva;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class RepositorioMemoria implements Repositorio {
 
