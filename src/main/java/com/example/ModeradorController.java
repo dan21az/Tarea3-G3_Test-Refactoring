@@ -10,7 +10,7 @@ import com.example.dominio.usuarios.Moderador;
 
 import java.util.List;
 
-public class ModeradorController {
+public class ModeradorController implements PerfilControlador{
 
     private final BaseDatosSingleton db;
     private final ServicioResena servicioResena;
@@ -25,6 +25,7 @@ public class ModeradorController {
         this.reservaActiva = reservaActiva;
         this.db = BaseDatosSingleton.getInstance();
     }
+    @Override
 
     public void ejecutar() {
         boolean volver = false;

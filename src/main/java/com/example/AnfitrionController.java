@@ -14,7 +14,7 @@ import com.example.dominio.usuarios.Anfitrion;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AnfitrionController {
+public class AnfitrionController implements PerfilControlador{
 
     private final Anfitrion anfitrion;
     private final ManejadorIncidente manejadorIncidentes;
@@ -24,6 +24,7 @@ public class AnfitrionController {
         this.anfitrion = anfitrion;
         this.manejadorIncidentes = manejadorIncidentes;
     }
+    @Override
 
     public void ejecutar() {
         boolean volver = false;

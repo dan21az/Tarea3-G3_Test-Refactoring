@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-public class HuespedController {
+public class HuespedController implements PerfilControlador {
 
     private static final SimpleDateFormat FORMATO_FECHA = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -36,6 +36,7 @@ public class HuespedController {
         this.servicioReserva = servicioReserva;
         this.servicioResena = servicioResena;
     }
+    @Override
 
     public void ejecutar() {
         boolean volver = false;

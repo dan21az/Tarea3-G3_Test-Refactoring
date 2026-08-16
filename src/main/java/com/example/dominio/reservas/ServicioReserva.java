@@ -22,9 +22,18 @@ public class ServicioReserva {
 
     public ServicioReserva(PasarelaPago pasarela,
                            SistemaNotificacion notificacion) {
-
         this.pasarela = pasarela;
         this.notificacion = notificacion;
+    }
+
+    // ✅ Método cancelar integrado con PoliticaCancelacion
+    public double cancelar(Reserva reserva, Date fechaCancelacion) {
+        reserva.marcarCancelada();
+        PoliticaCancelacion politica = reserva.getPoliticaCancelacion();
+        double reembolso = (politica != null) ? politica.calcularReembolso(reserva, fechaCancelacion) : 0.0;
+
+        System.out.println("Reserva cancelada. Reembolso: " + reembolso);
+        return reembolso;
     }
 
     public Reserva reservar(Date inicio,
@@ -129,19 +138,14 @@ public class ServicioReserva {
     }
 
     public boolean procesarPago(Pago pago) {
-
         System.out.println("Procesando pago...");
-
         return pasarela.procesarTransaccion(pago);
     }
 
     public void enviarConfirmacion(Reserva reserva, Usuario usuario) {
-
         System.out.println("Enviando confirmación...");
-
         if (notificacion != null && usuario != null) {
-            notificacion.enviarMensaje(usuario,
-                    "Tu reserva fue confirmada");
+            notificacion.enviarMensaje(usuario, "Tu reserva fue confirmada");
         }
     }
 
