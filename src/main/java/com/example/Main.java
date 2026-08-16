@@ -1,32 +1,45 @@
 package com.example;
 
+import java.util.Scanner;
+
 public class Main {
+    private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        AppConfig.inicializarDatosPrueba();
-        ContenedorDependencias contenedor = new ContenedorDependencias();
+        ContenedorDependencias appConfig = new ContenedorDependencias();
+        appConfig.inicializar();
 
         boolean salir = false;
         while (!salir) {
-            ConsoleUI.mostrarMensaje("\n=================================");
-            ConsoleUI.mostrarMensaje("   SELECCIONE UN PERFIL         ");
-            ConsoleUI.mostrarMensaje("=================================");
-            ConsoleUI.mostrarMensaje("1. Húesped");
-            ConsoleUI.mostrarMensaje("2. Anfitrión");
-            ConsoleUI.mostrarMensaje("3. Moderador");
-            ConsoleUI.mostrarMensaje("4. Salir");
-            String perfilSeleccionado = ConsoleUI.leerTexto("Seleccione un perfil: ");
+            mostrarMensaje("\n=================================");
+            mostrarMensaje("   SELECCIONE UN PERFIL         ");
+            mostrarMensaje("=================================");
+            mostrarMensaje("1. Húesped");
+            mostrarMensaje("2. Anfitrión");
+            mostrarMensaje("3. Moderador");
+            mostrarMensaje("4. Salir");
+            String perfilSeleccionado = leerTexto("Seleccione un perfil: ");
 
-            switch (perfilSeleccionado.toLowerCase()) {
-                case "1", "huesped", "h" -> contenedor.getHuespedController().ejecutar();
-                case "2", "anfitrion", "a" -> contenedor.getAnfitrionController().ejecutar();
-                case "3", "moderador", "m" -> contenedor.getModeradorController().ejecutar();
-                case "4", "salir", "s", "q" -> {
-                    ConsoleUI.mostrarMensaje("\nGracias por usar HomeStay.");
-                    salir = true;
-                }
-                default -> ConsoleUI.mostrarMensaje("\nPerfil no válido. Intente nuevamente.");
+            ControladorFactory factory = new ControladorFactory(scanner, appConfig.repositorio, appConfig);
+            Runnable controlador = factory.crearControlador(perfilSeleccionado);
+
+            if (controlador != null) {
+                controlador.run();
+            } else if (perfilSeleccionado.toLowerCase().matches("4|salir|s|q")) {
+                mostrarMensaje("\nGracias por usar HomeStay.");
+                salir = true;
+            } else {
+                mostrarMensaje("\nPerfil no válido. Intente nuevamente.");
             }
         }
+    }
+
+    private static void mostrarMensaje(String mensaje) {
+        System.out.println(mensaje);
+    }
+
+    private static String leerTexto(String mensaje) {
+        System.out.print(mensaje);
+        return scanner.nextLine().trim();
     }
 }

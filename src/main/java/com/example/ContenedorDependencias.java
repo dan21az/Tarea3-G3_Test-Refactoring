@@ -1,33 +1,70 @@
 package com.example;
 
+import com.example.ChainOfResponsibility.*;
+import com.example.Composite.Propiedad;
+import com.example.Composite.Unidad;
+import com.example.FactoryMethod.CasaFactory;
+import com.example.FactoryMethod.UnidadFactory;
+import com.example.Singleton.Repositorio;
+import com.example.Singleton.RepositorioMemoria;
+import com.example.Strategy.notificacion.Email;
+import com.example.Strategy.notificacion.SistemaNotificacion;
+import com.example.dominio.pagos.PasarelaAdapter;
+import com.example.dominio.pagos.ServicioPasarelaExterno;
+import com.example.dominio.resenas.ServicioResena;
+import com.example.dominio.reservas.PoliticaCancelacion;
+import com.example.dominio.reservas.Reserva;
+import com.example.dominio.reservas.ServicioReserva;
+import com.example.dominio.usuarios.*;
+
 public class ContenedorDependencias {
-    private final HuespedController huespedController;
-    private final AnfitrionController anfitrionController;
-    private final ModeradorController moderadorController;
 
-    public ContenedorDependencias() {
-        // Usamos los objetos inicializados en AppConfig
-        this.huespedController = new HuespedController(
-                AppConfig.huesped,
-                AppConfig.anfitrion,
-                AppConfig.servicioReserva,
-                AppConfig.servicioResena
-        );
+    public Repositorio repositorio;
+    public Huesped huesped;
+    public Anfitrion anfitrion;
+    public Moderador moderadorActivo;
+    public Propiedad propiedad;
+    public Unidad unidad;
+    public ServicioReserva servicioReserva;
+    public ServicioResena servicioResena;
+    public ManejadorIncidente manejadorIncidentes;
 
-        this.anfitrionController = new AnfitrionController(
-                AppConfig.anfitrion,
-                AppConfig.manejadorIncidentes
-        );
+    public void inicializar() {
+        repositorio = new RepositorioMemoria();
+        repositorio.limpiar();
 
-        this.moderadorController = new ModeradorController(
-                AppConfig.moderadorActivo,
-                AppConfig.manejadorIncidentes,
-                AppConfig.servicioResena,
-                AppConfig.reservaActiva
+        huesped = new Huesped("H-001", "Laura", "laura@mail.com", "123");
+        anfitrion = new Anfitrion("A-001", "Carlos", "carlos@mail.com", "123");
+
+        propiedad = new Propiedad("Casa Azul", "Bogotá", "No mascotas");
+        propiedad.setPoliticaCancelacion(new PoliticaCancelacion("Flexible", 2, 0.2));
+        propiedad.setCheckIn("15:00");
+        propiedad.setCheckOut("12:00");
+        propiedad.añadirServicio("WiFi");
+        propiedad.añadirServicio("Estacionamiento");
+        propiedad.añadirRestriccion("No fumar");
+
+        UnidadFactory casaFactory = new CasaFactory();
+        unidad = (Unidad) casaFactory.crearUnidad("U-001", 120.0);
+
+        propiedad.añadirUnidad(unidad);
+        anfitrion.registrarPropiedad(propiedad, repositorio);
+
+        servicioReserva = new ServicioReserva(
+                new PasarelaAdapter(new ServicioPasarelaExterno()),
+                new SistemaNotificacion(new Email()),
+                repositorio
         );
+        servicioResena = new ServicioResena();
+
+        moderadorActivo = new Moderador("Ana");
+        SoporteLegal soporteLegalActivo = new SoporteLegal("Abg. Pedro");
+
+        manejadorIncidentes = new AnfitrionHandler(anfitrion);
+        ManejadorIncidente m2 = new ModeradorHandler(moderadorActivo);
+        ManejadorIncidente m3 = new SoporteLegalHandler(soporteLegalActivo);
+
+        manejadorIncidentes.setSiguiente(m2);
+        m2.setSiguiente(m3);
     }
-
-    public HuespedController getHuespedController() { return huespedController; }
-    public AnfitrionController getAnfitrionController() { return anfitrionController; }
-    public ModeradorController getModeradorController() { return moderadorController; }
 }

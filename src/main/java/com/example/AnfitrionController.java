@@ -13,37 +13,43 @@ import com.example.dominio.usuarios.Anfitrion;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
-public class AnfitrionController implements PerfilControlador{
+import com.example.Singleton.Repositorio;
+
+public class AnfitrionController {
 
     private final Anfitrion anfitrion;
     private final ManejadorIncidente manejadorIncidentes;
     private Propiedad propiedad;
+    private final Scanner scanner;
+    private final Repositorio repositorio;
 
-    public AnfitrionController(Anfitrion anfitrion, ManejadorIncidente manejadorIncidentes) {
+    public AnfitrionController(Anfitrion anfitrion, ManejadorIncidente manejadorIncidentes, Scanner scanner, Repositorio repositorio) {
         this.anfitrion = anfitrion;
         this.manejadorIncidentes = manejadorIncidentes;
+        this.scanner = scanner;
+        this.repositorio = repositorio;
     }
-    @Override
 
     public void ejecutar() {
         boolean volver = false;
         while (!volver) {
-            ConsoleUI.mostrarMensaje("\n=== MENÚ ANFITRIÓN ===");
-            ConsoleUI.mostrarMensaje("1. Gestionar reglas y estado de unidad");
-            ConsoleUI.mostrarMensaje("2. Revisar incidentes de mi propiedad");
-            ConsoleUI.mostrarMensaje("3. Ver información de la propiedad");
-            ConsoleUI.mostrarMensaje("4. Añadir nueva propiedad y unidades");
-            ConsoleUI.mostrarMensaje("5. Volver al menú de perfiles");
-            String opcion = ConsoleUI.leerTexto("Seleccione una opción: ");
+            mostrarMensaje("\n=== MENÚ ANFITRIÓN ===");
+            mostrarMensaje("1. Gestionar reglas y estado de unidad");
+            mostrarMensaje("2. Revisar incidentes de mi propiedad");
+            mostrarMensaje("3. Ver información de la propiedad");
+            mostrarMensaje("4. Añadir nueva propiedad y unidades");
+            mostrarMensaje("5. Volver al menú de perfiles");
+            String opcion = leerTexto("Seleccione una opción: ");
 
             switch (opcion.toLowerCase()) {
                 case "1", "reglas", "estado" -> gestionarReglasYEstado();
-                case "2", "incidente", "incidentes" -> revisarIncidentesDelAnfitrion();
+                case "2", "incidente", "incidentes" -> revisarIncidentes();
                 case "3", "info" -> mostrarInformacionPropiedad();
                 case "4", "nueva", "añadir" -> registrarNuevaPropiedad();
                 case "5", "volver", "v" -> volver = true;
-                default -> ConsoleUI.mostrarMensaje("\nOpción no válida.");
+                default -> mostrarMensaje("\nOpción no válida.");
             }
         }
     }
@@ -57,7 +63,7 @@ public class AnfitrionController implements PerfilControlador{
         propiedad = propiedadSeleccionada;
         Unidad unidadSeleccionada = seleccionarUnidadDePropiedad(propiedadSeleccionada);
         if (unidadSeleccionada == null) {
-            ConsoleUI.mostrarMensaje("No hay unidades disponibles para gestionar en esa propiedad.");
+            mostrarMensaje("No hay unidades disponibles para gestionar en esa propiedad.");
             return;
         }
 
@@ -67,49 +73,49 @@ public class AnfitrionController implements PerfilControlador{
     }
 
     private String mostrarOpcionesGestion() {
-        ConsoleUI.mostrarMensaje("\n--- Gestión de Reglas y Estado de Unidad ---");
-        ConsoleUI.mostrarMensaje("1. Actualizar reglas de la propiedad");
-        ConsoleUI.mostrarMensaje("2. Cambiar estado a Mantenimiento");
-        ConsoleUI.mostrarMensaje("3. Cambiar estado a Disponible");
-        ConsoleUI.mostrarMensaje("4. Actualizar horario de check-in / check-out");
-        return ConsoleUI.leerTexto("Seleccione opción: ");
+        mostrarMensaje("\n--- Gestión de Reglas y Estado de Unidad ---");
+        mostrarMensaje("1. Actualizar reglas de la propiedad");
+        mostrarMensaje("2. Cambiar estado a Mantenimiento");
+        mostrarMensaje("3. Cambiar estado a Disponible");
+        mostrarMensaje("4. Actualizar horario de check-in / check-out");
+        return leerTexto("Seleccione opción: ");
     }
 
     private void ejecutarSubOpcion(String subOpcion, Unidad unidadSeleccionada) {
         switch (subOpcion) {
             case "1" -> {
-                String nuevaRegla = ConsoleUI.leerTexto("Ingrese nueva regla: ");
+                String nuevaRegla = leerTexto("Ingrese nueva regla: ");
                 anfitrion.gestionarReglas(propiedad, nuevaRegla);
-                ConsoleUI.mostrarMensaje("Regla registrada exitosamente.");
+                mostrarMensaje("Regla registrada exitosamente.");
             }
             case "2" -> {
                 anfitrion.actualizarEstadoUnidad(unidadSeleccionada, new Mantenimiento());
-                ConsoleUI.mostrarMensaje("Estado de unidad actualizado a: Mantenimiento");
+                mostrarMensaje("Estado de unidad actualizado a: Mantenimiento");
             }
             case "3" -> {
                 anfitrion.actualizarEstadoUnidad(unidadSeleccionada, new Disponible());
-                ConsoleUI.mostrarMensaje("Estado de unidad actualizado a: Disponible");
+                mostrarMensaje("Estado de unidad actualizado a: Disponible");
             }
             case "4" -> actualizarHorariosPropiedad();
-            default -> ConsoleUI.mostrarMensaje("Sub-opción no válida.");
+            default -> mostrarMensaje("Sub-opción no válida.");
         }
     }
 
     private void actualizarHorariosPropiedad() {
-        String nuevoCheckIn = ConsoleUI.leerTexto("Ingrese el nuevo horario de check-in (HH:mm): ");
-        String nuevoCheckOut = ConsoleUI.leerTexto("Ingrese el nuevo horario de check-out (HH:mm): ");
+        String nuevoCheckIn = leerTexto("Ingrese el nuevo horario de check-in (HH:mm): ");
+        String nuevoCheckOut = leerTexto("Ingrese el nuevo horario de check-out (HH:mm): ");
         anfitrion.actualizarHorarioDePropiedad(propiedad, nuevoCheckIn, nuevoCheckOut);
-        ConsoleUI.mostrarMensaje("Horario de la propiedad actualizado.");
-        ConsoleUI.mostrarMensaje("Check-in: " + propiedad.getCheckIn());
-        ConsoleUI.mostrarMensaje("Check-out: " + propiedad.getCheckOut());
+        mostrarMensaje("Horario de la propiedad actualizado.");
+        mostrarMensaje("Check-in: " + propiedad.getCheckIn());
+        mostrarMensaje("Check-out: " + propiedad.getCheckOut());
     }
 
-    private void revisarIncidentesDelAnfitrion() {
-        ConsoleUI.mostrarMensaje("\n--- Incidentes de las propiedades del anfitrión ---");
-        List<Incidente> incidentes = anfitrion.revisarIncidentesDeSusPropiedades();
+    private void revisarIncidentes() {
+        mostrarMensaje("\n--- Revisar Incidentes ---");
+        List<Incidente> incidentes = anfitrion.revisarIncidentesDeSusPropiedades(repositorio);
 
         if (incidentes.isEmpty()) {
-            ConsoleUI.mostrarMensaje("No existen incidentes asociados a tus propiedades.");
+            mostrarMensaje("No existen incidentes asociados a tus propiedades.");
             return;
         }
 
@@ -120,26 +126,26 @@ public class AnfitrionController implements PerfilControlador{
             return;
         }
 
-        String opcion = ConsoleUI.leerTexto("¿Lo resuelve usted? (s/n): ");
+        String opcion = leerTexto("¿Lo resuelve usted? (s/n): ");
         boolean resuelto = opcion.equalsIgnoreCase("s");
         manejadorIncidentes.manejar(incidenteSeleccionado, resuelto);
     }
 
     private void mostrarListaIncidentes(List<Incidente> incidentes) {
         for (Incidente incidente : incidentes) {
-            ConsoleUI.mostrarMensaje("- " + incidente.getIdIncidente() + " | " + incidente.getDescripcion() + " | Estado: " + incidente.getEstado());
+            mostrarMensaje("- " + incidente.getIdIncidente() + " | " + incidente.getDescripcion() + " | Estado: " + incidente.getEstado());
         }
     }
 
     private Incidente seleccionarIncidentePorId(List<Incidente> incidentes) {
-        String idIncidente = ConsoleUI.leerTexto("Ingrese el ID del incidente a revisar: ");
+        String idIncidente = leerTexto("Ingrese el ID del incidente a revisar: ");
         Incidente incidenteSeleccionado = incidentes.stream()
                 .filter(i -> i.getIdIncidente().equalsIgnoreCase(idIncidente))
                 .findFirst()
                 .orElse(null);
 
         if (incidenteSeleccionado == null) {
-            ConsoleUI.mostrarMensaje("No existe ese incidente en tus propiedades.");
+            mostrarMensaje("No existe ese incidente en tus propiedades.");
         }
         return incidenteSeleccionado;
     }
@@ -151,26 +157,26 @@ public class AnfitrionController implements PerfilControlador{
         }
 
         propiedad = propiedadSeleccionada;
-        ConsoleUI.mostrarMensaje("\n--- Información de la propiedad ---");
-        ConsoleUI.mostrarMensaje("Nombre: " + propiedad.getNombre());
-        ConsoleUI.mostrarMensaje("Dirección: " + propiedad.getDireccion());
-        ConsoleUI.mostrarMensaje("Reglas: " + propiedad.getReglas());
-        ConsoleUI.mostrarMensaje("Check-in: " + propiedad.getCheckIn());
-        ConsoleUI.mostrarMensaje("Check-out: " + propiedad.getCheckOut());
-        ConsoleUI.mostrarMensaje("Servicios: " + propiedad.getServicios());
-        ConsoleUI.mostrarMensaje("Unidades: " + propiedad.getChildren().size());
+        mostrarMensaje("\n--- Información de la propiedad ---");
+        mostrarMensaje("Nombre: " + propiedad.getNombre());
+        mostrarMensaje("Dirección: " + propiedad.getDireccion());
+        mostrarMensaje("Reglas: " + propiedad.getReglas());
+        mostrarMensaje("Check-in: " + propiedad.getCheckIn());
+        mostrarMensaje("Check-out: " + propiedad.getCheckOut());
+        mostrarMensaje("Servicios: " + propiedad.getServicios());
+        mostrarMensaje("Unidades: " + propiedad.getChildren().size());
     }
 
     private void registrarNuevaPropiedad() {
-        ConsoleUI.mostrarMensaje("\n--- Registrar nueva propiedad con unidades ---");
+        mostrarMensaje("\n--- Registrar nueva propiedad con unidades ---");
 
         String[] datos = leerDatosPropiedad();
         List<CompPropiedad> unidades = leerUnidades();
 
         Propiedad propiedadNueva = anfitrion.registrarNuevaPropiedadConUnidades(
-                datos[0], datos[1], datos[2], unidades, List.of(datos[3].split("\\s*,\\s*")));
+                datos[0], datos[1], datos[2], unidades, List.of(datos[3].split("\\s*,\\s*")), repositorio);
         if (propiedadNueva == null) {
-            ConsoleUI.mostrarMensaje("No se registró la propiedad porque no tiene unidades válidas.");
+            mostrarMensaje("No se registró la propiedad porque no tiene unidades válidas.");
             return;
         }
 
@@ -178,33 +184,33 @@ public class AnfitrionController implements PerfilControlador{
     }
 
     private String[] leerDatosPropiedad() {
-        String nombre = ConsoleUI.leerTexto("Nombre de la propiedad: ");
-        String direccion = ConsoleUI.leerTexto("Dirección: ");
-        String reglas = ConsoleUI.leerTexto("Reglas: ");
-        String checkIn = ConsoleUI.leerTexto("Hora de check-in (HH:mm, ej: 15:00): ");
-        String checkOut = ConsoleUI.leerTexto("Hora de check-out (HH:mm, ej: 12:00): ");
-        String serviciosStr = ConsoleUI.leerTexto("Servicios (separados por coma): ");
+        String nombre = leerTexto("Nombre de la propiedad: ");
+        String direccion = leerTexto("Dirección: ");
+        String reglas = leerTexto("Reglas: ");
+        String checkIn = leerTexto("Hora de check-in (HH:mm, ej: 15:00): ");
+        String checkOut = leerTexto("Hora de check-out (HH:mm, ej: 12:00): ");
+        String serviciosStr = leerTexto("Servicios (separados por coma): ");
         return new String[] { nombre, direccion, reglas, serviciosStr, checkIn, checkOut };
     }
 
     private List<CompPropiedad> leerUnidades() {
         List<CompPropiedad> unidades = new ArrayList<>();
 
-        ConsoleUI.mostrarMensaje("\nDebe registrar al menos una unidad para crear la propiedad.");
+        mostrarMensaje("\nDebe registrar al menos una unidad para crear la propiedad.");
         agregarUnidadDesdeEntrada(unidades);
 
-        String seguir = ConsoleUI.leerTexto("¿Desea añadir otra unidad? (s/n): ");
+        String seguir = leerTexto("¿Desea añadir otra unidad? (s/n): ");
         while (seguir.equalsIgnoreCase("s")) {
             agregarUnidadDesdeEntrada(unidades);
-            seguir = ConsoleUI.leerTexto("¿Desea añadir otra unidad? (s/n): ");
+            seguir = leerTexto("¿Desea añadir otra unidad? (s/n): ");
         }
         return unidades;
     }
 
     private void configurarPoliticaYHorarios(Propiedad propiedadNueva, String checkIn, String checkOut) {
-        String nombrePolitica = ConsoleUI.leerTexto("Nombre de la política de cancelación (ej. Flexible, Moderada, Estricta): ");
-        int diasAntelacion = ConsoleUI.leerInt("Días de anticipación mínimos para aplicar la política: ");
-        double penalizacion = ConsoleUI.leerDouble("Factor de penalización (ej. 0.2 para 20% de penalización): ");
+        String nombrePolitica = leerTexto("Nombre de la política de cancelación (ej. Flexible, Moderada, Estricta): ");
+        int diasAntelacion = leerInt("Días de anticipación mínimos para aplicar la política: ");
+        double penalizacion = leerDouble("Factor de penalización (ej. 0.2 para 20% de penalización): ");
 
         PoliticaCancelacion politica = new PoliticaCancelacion(nombrePolitica, diasAntelacion, penalizacion);
         propiedadNueva.setPoliticaCancelacion(politica);
@@ -213,29 +219,29 @@ public class AnfitrionController implements PerfilControlador{
                 checkIn.isBlank() ? "15:00" : checkIn,
                 checkOut.isBlank() ? "12:00" : checkOut);
 
-        ConsoleUI.mostrarMensaje("Propiedad registrada correctamente con " + propiedadNueva.getChildren().size() + " unidad(es).");
-        ConsoleUI.mostrarMensaje("Check-in: " + propiedadNueva.getCheckIn());
-        ConsoleUI.mostrarMensaje("Check-out: " + propiedadNueva.getCheckOut());
+        mostrarMensaje("Propiedad registrada correctamente con " + propiedadNueva.getChildren().size() + " unidad(es).");
+        mostrarMensaje("Check-in: " + propiedadNueva.getCheckIn());
+        mostrarMensaje("Check-out: " + propiedadNueva.getCheckOut());
     }
 
     private Propiedad seleccionarPropiedadDelAnfitrion() {
         List<Propiedad> propiedadesDelAnfitrion = anfitrion.getPropiedades();
         if (propiedadesDelAnfitrion == null || propiedadesDelAnfitrion.isEmpty()) {
-            ConsoleUI.mostrarMensaje("Todavía no tienes propiedades registradas.");
+            mostrarMensaje("Todavía no tienes propiedades registradas.");
             return null;
         }
 
         mostrarListaPropiedades(propiedadesDelAnfitrion);
 
-        String entrada = ConsoleUI.leerTexto("Ingrese el nombre o número de la propiedad a gestionar: ");
+        String entrada = leerTexto("Ingrese el nombre o número de la propiedad a gestionar: ");
         return parsearSeleccionPropiedad(propiedadesDelAnfitrion, entrada);
     }
 
     private void mostrarListaPropiedades(List<Propiedad> propiedadesDelAnfitrion) {
-        ConsoleUI.mostrarMensaje("\nTus propiedades registradas:");
+        mostrarMensaje("\nTus propiedades registradas:");
         for (int i = 0; i < propiedadesDelAnfitrion.size(); i++) {
             Propiedad p = propiedadesDelAnfitrion.get(i);
-            ConsoleUI.mostrarMensaje((i + 1) + ". " + p.getNombre() + " | " + p.getDireccion());
+            mostrarMensaje((i + 1) + ". " + p.getNombre() + " | " + p.getDireccion());
         }
     }
 
@@ -253,7 +259,7 @@ public class AnfitrionController implements PerfilControlador{
             return propiedadEncontrada;
         }
 
-        ConsoleUI.mostrarMensaje("No se encontró esa propiedad entre las de tu registro.");
+        mostrarMensaje("No se encontró esa propiedad entre las de tu registro.");
         return null;
     }
 
@@ -264,10 +270,10 @@ public class AnfitrionController implements PerfilControlador{
 
         mostrarListaUnidades(propiedadSeleccionada);
 
-        String idUnidad = ConsoleUI.leerTexto("Ingrese el ID de la unidad a gestionar: ");
+        String idUnidad = leerTexto("Ingrese el ID de la unidad a gestionar: ");
         Unidad unidadEncontrada = propiedadSeleccionada.obtenerUnidadPorId(idUnidad);
         if (unidadEncontrada == null) {
-            ConsoleUI.mostrarMensaje("No se encontró esa unidad en la propiedad seleccionada.");
+            mostrarMensaje("No se encontró esa unidad en la propiedad seleccionada.");
             return null;
         }
 
@@ -275,20 +281,20 @@ public class AnfitrionController implements PerfilControlador{
     }
 
     private void mostrarListaUnidades(Propiedad propiedadSeleccionada) {
-        ConsoleUI.mostrarMensaje("\nUnidades disponibles en la propiedad " + propiedadSeleccionada.getNombre() + ":");
+        mostrarMensaje("\nUnidades disponibles en la propiedad " + propiedadSeleccionada.getNombre() + ":");
         int contador = 1;
         for (CompPropiedad hijo : propiedadSeleccionada.getChildren()) {
             if (hijo instanceof Unidad unidad) {
-                ConsoleUI.mostrarMensaje(contador + ". " + unidad.getIdUnidad() + " | " + unidad.getTipo() + " | " + unidad.getPrecio() + "/noche");
+                mostrarMensaje(contador + ". " + unidad.getIdUnidad() + " | " + unidad.getTipo() + " | " + unidad.getPrecio() + "/noche");
                 contador++;
             }
         }
     }
 
     private void agregarUnidadDesdeEntrada(List<CompPropiedad> unidades) {
-        String idUnidad = ConsoleUI.leerTexto("ID de la unidad: ");
-        String tipo = ConsoleUI.leerTexto("Tipo de unidad (Casa / Departamento Completo / Habitación Privada): ");
-        double precio = ConsoleUI.leerDouble("Precio base por noche: ");
+        String idUnidad = leerTexto("ID de la unidad: ");
+        String tipo = leerTexto("Tipo de unidad (Casa / Departamento Completo / Habitación Privada): ");
+        double precio = leerDouble("Precio base por noche: ");
 
         unidades.add(crearFactoryUnidad(tipo).crearUnidad(idUnidad, precio));
     }
@@ -301,10 +307,39 @@ public class AnfitrionController implements PerfilControlador{
             case "habitacion privada", "habitacion", "habitación privada" -> new com.example.FactoryMethod.HabitacionPrivadaFactory();
             default -> {
                 if (!tipoNormalizado.isBlank()) {
-                    ConsoleUI.mostrarMensaje("Tipo no reconocido. Se usará Casa por defecto.");
+                    mostrarMensaje("Tipo no reconocido. Se usará Casa por defecto.");
                 }
                 yield new com.example.FactoryMethod.CasaFactory();
             }
         };
+    }
+
+    private void mostrarMensaje(String mensaje) {
+        System.out.println(mensaje);
+    }
+
+    private String leerTexto(String mensaje) {
+        System.out.print(mensaje);
+        return scanner.nextLine().trim();
+    }
+
+    private double leerDouble(String mensaje) {
+        while (true) {
+            try {
+                return Double.parseDouble(leerTexto(mensaje));
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Ingrese un valor numérico decimal válido.");
+            }
+        }
+    }
+
+    private int leerInt(String mensaje) {
+        while (true) {
+            try {
+                return Integer.parseInt(leerTexto(mensaje));
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Ingrese un número entero válido.");
+            }
+        }
     }
 }
