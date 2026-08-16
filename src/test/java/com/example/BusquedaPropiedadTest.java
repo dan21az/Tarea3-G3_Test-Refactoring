@@ -12,18 +12,20 @@ import org.junit.jupiter.api.Test;
 
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
+import com.example.Singleton.RepositorioMemoria;
+import com.example.dominio.CriterioBusquedaEvaluator;
 import com.example.dominio.CriterioBusqueda;
 import com.example.dominio.usuarios.Huesped;
 
 class BusquedaPropiedadTest {
 
-    private BaseDatosSingleton db;
+    private Repositorio db;
     private Huesped huesped;
 
     @BeforeEach
     void setUp() {
-        db = BaseDatosSingleton.getInstance();
+        db = new RepositorioMemoria();
         db.limpiar();
         huesped = new Huesped("H1", "Laura", "laura@mail.com", "123");
     }
@@ -46,7 +48,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda("Bogotá", 50.0, 150.0, "Casa", Arrays.asList("WiFi"));
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(1, resultados.size());
         assertEquals("Casa Azul", resultados.get(0).getNombre());
@@ -63,7 +65,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda("bogotá", 50.0, 150.0, "Casa", Arrays.asList("WiFi"));
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(1, resultados.size());
         assertEquals("Casa Azul", resultados.get(0).getNombre());
@@ -79,7 +81,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda("Cali", 0.0, 0.0, null, null);
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(0, resultados.size());
     }
@@ -94,7 +96,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda("Bogo", 0.0, 0.0, null, null);
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(1, resultados.size());
         assertEquals("Casa Azul", resultados.get(0).getNombre());
@@ -115,7 +117,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 0.0, 0.0, null, null);
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(2, resultados.size());
     }
@@ -135,7 +137,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 0.0, 0.0, null, Collections.emptyList());
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(2, resultados.size());
     }
@@ -153,7 +155,7 @@ class BusquedaPropiedadTest {
         prop2.añadirUnidad(unidad2);
         db.guardarPropiedad(prop2);
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(null);
+        List<Propiedad> resultados = huesped.buscarPropiedad(null, db);
 
         assertEquals(2, resultados.size());
     }
@@ -168,7 +170,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 50.0, 40.0, null, null);
 
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(0, resultados.size());
     }
@@ -277,7 +279,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 0.0, 0.0, "Casa", null);
 
-        assertTrue(propiedad.coincide(criterio));
+        assertTrue(new CriterioBusquedaEvaluator().coincide(propiedad, criterio));
     }
 
     @Test
@@ -289,7 +291,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 0.0, 0.0, "Casa", null);
 
-        assertFalse(propiedad.coincide(criterio));
+        assertFalse(new CriterioBusquedaEvaluator().coincide(propiedad, criterio));
     }
 
     @Test
@@ -303,7 +305,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 0.0, 0.0, null, Arrays.asList("Piscina"));
 
-        assertTrue(propiedad.coincide(criterio));
+        assertTrue(new CriterioBusquedaEvaluator().coincide(propiedad, criterio));
     }
 
     @Test
@@ -317,7 +319,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 0.0, 0.0, null, Arrays.asList("Gimnasio"));
 
-        assertFalse(propiedad.coincide(criterio));
+        assertFalse(new CriterioBusquedaEvaluator().coincide(propiedad, criterio));
     }
 
     @Test
@@ -329,7 +331,7 @@ class BusquedaPropiedadTest {
 
         CriterioBusqueda criterio = new CriterioBusqueda(null, 200.0, 0.0, null, null);
 
-        assertFalse(propiedad.coincide(criterio));
+        assertFalse(new CriterioBusquedaEvaluator().coincide(propiedad, criterio));
     }
 
     @Test

@@ -17,7 +17,8 @@ import com.example.ChainOfResponsibility.ModeradorHandler;
 import com.example.ChainOfResponsibility.SoporteLegalHandler;
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
+import com.example.Singleton.RepositorioMemoria;
 import com.example.dominio.incidentes.EstadoIncidente;
 import com.example.dominio.incidentes.Incidente;
 import com.example.dominio.reservas.Reserva;
@@ -28,11 +29,11 @@ import com.example.dominio.usuarios.SoporteLegal;
 
 class ServicioIncidenteTest {
 
-    private BaseDatosSingleton db;
+    private Repositorio db;
 
     @BeforeEach
     void setUp() throws Exception {
-        db = BaseDatosSingleton.getInstance();
+        db = new RepositorioMemoria();
         db.limpiar();
         resetSecuenciaIncidente();
     }
@@ -47,7 +48,7 @@ class ServicioIncidenteTest {
     private Reserva crearReserva() {
         Unidad unidad = new Unidad("U-1", "Casa", 100.0);
         Huesped huesped = new Huesped("H1", "Laura", "laura@mail.com", "123");
-        return new Reserva(new Date(), new Date(), huesped, unidad);
+        return new Reserva(new com.example.dominio.reservas.RangoFechas(new Date(), new Date(System.currentTimeMillis() + 86400000)), huesped, unidad);
     }
 
     static class HandlerPrueba extends ManejadorIncidente {
@@ -374,14 +375,14 @@ class ServicioIncidenteTest {
         propiedad.añadirUnidad(unidad);
 
         Anfitrion anfitrion = new Anfitrion("A1", "Carlos", "carlos@mail.com", "123");
-        anfitrion.registrarPropiedad(propiedad);
+        anfitrion.registrarPropiedad(propiedad, db);
 
         Huesped huesped = new Huesped("H1", "Laura", "laura@mail.com", "123");
-        Reserva reserva = new Reserva(new Date(), new Date(), huesped, unidad);
+        Reserva reserva = new Reserva(new com.example.dominio.reservas.RangoFechas(new Date(), new Date(System.currentTimeMillis() + 86400000)), huesped, unidad);
         Incidente incidente = new Incidente("Problema wifi", reserva);
         db.guardarIncidente(incidente);
 
-        List<Incidente> resultado = anfitrion.revisarIncidentesDeSusPropiedades();
+        List<Incidente> resultado = anfitrion.revisarIncidentesDeSusPropiedades(db);
 
         assertEquals(1, resultado.size());
         assertSame(incidente, resultado.get(0));
@@ -395,7 +396,7 @@ class ServicioIncidenteTest {
         propiedad.añadirUnidad(unidad);
 
         Huesped huesped = new Huesped("H1", "Laura", "laura@mail.com", "123");
-        Reserva reserva = new Reserva(new Date(), new Date(), huesped, unidad);
+        Reserva reserva = new Reserva(new com.example.dominio.reservas.RangoFechas(new Date(), new Date(System.currentTimeMillis() + 86400000)), huesped, unidad);
         Incidente incidente = new Incidente("Problema wifi", reserva);
         db.guardarIncidente(incidente);
 

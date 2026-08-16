@@ -17,7 +17,8 @@ import com.example.ChainOfResponsibility.ModeradorHandler;
 import com.example.ChainOfResponsibility.SoporteLegalHandler;
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
+import com.example.Singleton.RepositorioMemoria;
 import com.example.State.Disponible;
 import com.example.State.Reservada;
 import com.example.Strategy.notificacion.Email;
@@ -33,6 +34,7 @@ import com.example.dominio.resenas.ServicioResena;
 import com.example.dominio.reservas.EstadoReserva;
 import com.example.dominio.reservas.ParametrosReserva;
 import com.example.dominio.reservas.PoliticaCancelacion;
+import com.example.dominio.reservas.RangoFechas;
 import com.example.dominio.reservas.Reserva;
 import com.example.dominio.reservas.ServicioReserva;
 import com.example.dominio.usuarios.Anfitrion;
@@ -42,7 +44,7 @@ import com.example.dominio.usuarios.SoporteLegal;
 
 class SistemaTest {
 
-    private BaseDatosSingleton db;
+    private Repositorio db;
     private ServicioReserva servicioReserva;
     private ServicioResena servicioResena;
     private Huesped huesped;
@@ -51,16 +53,15 @@ class SistemaTest {
     private Date fin;
 
     @BeforeEach
-    void setUp() {
-        db = BaseDatosSingleton.getInstance();
+    void setUp() throws Exception {
+        db = new RepositorioMemoria();
         db.limpiar();
 
         huesped = new Huesped("H-001", "Laura", "laura@mail.com", "123");
         anfitrion = new Anfitrion("A-001", "Carlos", "carlos@mail.com", "123");
 
-        servicioReserva = new ServicioReserva(
-                new com.example.dominio.pagos.PasarelaAdapter(new com.example.dominio.pagos.ServicioPasarelaExterno()),
-                new SistemaNotificacion(new Email()));
+        servicioReserva = new ServicioReserva(new com.example.dominio.pagos.PasarelaAdapter(new com.example.dominio.pagos.ServicioPasarelaExterno()),
+                new SistemaNotificacion(new Email()), db);
         servicioResena = new ServicioResena();
 
         inicio = new GregorianCalendar(2026, Calendar.OCTOBER, 1).getTime();
@@ -79,14 +80,14 @@ class SistemaTest {
         db.guardarPropiedad(propiedad);
 
         CriterioBusqueda criterio = new CriterioBusqueda("Bogotá", 0, 0, "Casa", List.of());
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(1, resultados.size());
         assertEquals("Casa Azul", resultados.get(0).getNombre());
 
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
         ParametrosReserva parametros = new ParametrosReserva(false, false, card);
-        Reserva reserva = servicioReserva.reservar(inicio, fin, huesped, unidad, parametros);
+        Reserva reserva = servicioReserva.reservar(new RangoFechas(inicio, fin), huesped, unidad, parametros);
 
         assertNotNull(reserva);
 
@@ -108,7 +109,7 @@ class SistemaTest {
         propiedad.añadirUnidad(unidad);
         db.guardarPropiedad(propiedad);
 
-        Reserva reserva = new Reserva(inicio, fin, huesped, unidad);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, unidad);
         reserva.setTotal(120.0);
         reserva.confirmar();
         db.guardarReserva(reserva);
@@ -151,7 +152,7 @@ class SistemaTest {
         db.guardarPropiedad(propiedad);
 
         CriterioBusqueda criterio = new CriterioBusqueda("Bogotá", 0, 0, null, Arrays.asList("Gimnasio"));
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertTrue(resultados.isEmpty());
     }
@@ -163,17 +164,17 @@ class SistemaTest {
         propiedad.setPoliticaCancelacion(new PoliticaCancelacion("Flexible", 2, 0.2));
         Unidad unidad = new Unidad("U-200", "Casa", 100.0);
         propiedad.añadirUnidad(unidad);
-        anfitrion.registrarPropiedad(propiedad);
+        anfitrion.registrarPropiedad(propiedad, db);
 
         CriterioBusqueda criterio = new CriterioBusqueda("Bogotá", 0, 0, "Casa", List.of());
-        List<Propiedad> resultados = huesped.buscarPropiedad(criterio);
+        List<Propiedad> resultados = huesped.buscarPropiedad(criterio, db);
 
         assertEquals(1, resultados.size());
         assertEquals("Casa Verde", resultados.get(0).getNombre());
 
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
         ParametrosReserva parametros = new ParametrosReserva(false, false, card);
-        Reserva reserva = servicioReserva.reservar(inicio, fin, huesped, unidad, parametros);
+        Reserva reserva = servicioReserva.reservar(new RangoFechas(inicio, fin), huesped, unidad, parametros);
 
         assertNotNull(reserva);
         assertEquals(1, db.getReservas().size());
@@ -201,12 +202,12 @@ class SistemaTest {
 
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
 
-        Reserva reserva1 = servicioReserva.reservar(inicio, fin, huesped, unidad1,
+        Reserva reserva1 = servicioReserva.reservar(new RangoFechas(inicio, fin), huesped, unidad1,
                 new ParametrosReserva(false, false, card));
         assertNotNull(reserva1);
         assertEquals(1, db.getReservas().size());
 
-        Reserva reserva2 = servicioReserva.reservar(inicio, fin, huesped, unidad2,
+        Reserva reserva2 = servicioReserva.reservar(new RangoFechas(inicio, fin), huesped, unidad2,
                 new ParametrosReserva(false, false, card));
         assertNull(reserva2);
 
@@ -224,7 +225,7 @@ class SistemaTest {
         propiedad.añadirUnidad(unidad);
         db.guardarPropiedad(propiedad);
 
-        Reserva reserva = new Reserva(inicio, fin, huesped, unidad);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, unidad);
         reserva.setTotal(120.0);
         reserva.confirmar();
         db.guardarReserva(reserva);
@@ -256,11 +257,11 @@ class SistemaTest {
 
         PasarelaPago pasarelaFallida = pago -> false;
         ServicioReserva servicioFallido = new ServicioReserva(pasarelaFallida,
-                new SistemaNotificacion(new Email()));
+                new SistemaNotificacion(new Email()), db);
 
         MetodoPago cardFallida = new TarjetaMetodoPago("error");
         ParametrosReserva parametros = new ParametrosReserva(false, false, cardFallida);
-        Reserva reserva = servicioFallido.reservar(inicio, fin, huesped, unidad, parametros);
+        Reserva reserva = servicioFallido.reservar(new RangoFechas(inicio, fin), huesped, unidad, parametros);
 
         assertNull(reserva);
         assertTrue(unidad.getEstado() instanceof Disponible);

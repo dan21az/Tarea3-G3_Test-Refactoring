@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.example.Composite.Unidad;
 import com.example.dominio.resenas.Resena;
 import com.example.dominio.resenas.ServicioResena;
+import com.example.dominio.reservas.RangoFechas;
 import com.example.dominio.reservas.Reserva;
 import com.example.dominio.usuarios.Huesped;
 
@@ -31,7 +32,7 @@ class ServicioResenaTest {
         Date inicio = new GregorianCalendar(2026, Calendar.SEPTEMBER, 1).getTime();
         Date fin = new GregorianCalendar(2026, Calendar.SEPTEMBER, 5).getTime();
         Unidad unidad = new Unidad("U-100", "Casa", 120.0);
-        reserva = new Reserva(inicio, fin, huesped, unidad);
+        reserva = new Reserva(new RangoFechas(inicio, fin), huesped, unidad);
     }
 
     @Test

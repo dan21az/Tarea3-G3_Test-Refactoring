@@ -10,31 +10,20 @@ import org.junit.jupiter.api.Test;
 
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.RepositorioMemoria;
 import com.example.dominio.incidentes.Incidente;
+import com.example.dominio.reservas.RangoFechas;
 import com.example.dominio.reservas.Reserva;
 import com.example.dominio.usuarios.Huesped;
 
 class GestionBDSingletonTest {
 
-    private BaseDatosSingleton db;
+    private RepositorioMemoria db;
 
     @BeforeEach
     void setUp() {
-        db = BaseDatosSingleton.getInstance();
+        db = new RepositorioMemoria();
         db.limpiar();
-    }
-
-    @Test
-    @DisplayName("G037 - getInstance() devuelve siempre la misma instancia (Singleton)")
-    void g037_getInstance_siempreMismaInstancia() {
-        BaseDatosSingleton instancia1 = BaseDatosSingleton.getInstance();
-        BaseDatosSingleton instancia2 = BaseDatosSingleton.getInstance();
-        BaseDatosSingleton instancia3 = BaseDatosSingleton.getInstance();
-
-        assertSame(instancia1, instancia2);
-        assertSame(instancia2, instancia3);
-        assertSame(instancia1, instancia3);
     }
 
     @Test
@@ -75,7 +64,7 @@ class GestionBDSingletonTest {
     void g041_guardarReserva_reservaValida() {
         Huesped huesped = new Huesped("H1", "Laura", "laura@mail.com", "123");
         Unidad unidad = new Unidad("U-100", "Casa", 120.0);
-        Reserva reserva = new Reserva(new Date(), new Date(), huesped, unidad);
+        Reserva reserva = new Reserva(new RangoFechas(new Date(), new Date(System.currentTimeMillis() + 86400000)), huesped, unidad);
 
         db.guardarReserva(reserva);
 
@@ -86,7 +75,7 @@ class GestionBDSingletonTest {
     @Test
     @DisplayName("G042 - guardarIncidente con incidente válido lo añade a la lista de incidentes")
     void g042_guardarIncidente_incidenteValido() {
-        Reserva reserva = new Reserva(new Date(), new Date(), null, null);
+        Reserva reserva = new Reserva(new RangoFechas(new Date(), new Date(System.currentTimeMillis() + 86400000)), null, null);
         Incidente incidente = new Incidente("INC-001", "Problema de agua", reserva);
 
         db.guardarIncidente(incidente);
@@ -124,7 +113,7 @@ class GestionBDSingletonTest {
     void g045_limpiar_bdConDatos_listasVacias() {
         Propiedad propiedad = new Propiedad("Casa Azul", "Bogotá", "No mascotas");
         Unidad unidad = new Unidad("U-100", "Casa", 120.0);
-        Reserva reserva = new Reserva(new Date(), new Date(), null, unidad);
+        Reserva reserva = new Reserva(new RangoFechas(new Date(), new Date(System.currentTimeMillis() + 86400000)), null, unidad);
         Incidente incidente = new Incidente("INC-001", "Problema de agua", reserva);
 
         db.guardarPropiedad(propiedad);

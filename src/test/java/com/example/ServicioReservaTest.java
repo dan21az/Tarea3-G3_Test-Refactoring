@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
+import com.example.Singleton.RepositorioMemoria;
 import com.example.State.FueraDeServicio;
 import com.example.State.Mantenimiento;
 import com.example.State.Ocupada;
@@ -30,13 +31,14 @@ import com.example.dominio.pagos.ServicioPasarelaExterno;
 import com.example.dominio.reservas.EstadoReserva;
 import com.example.dominio.reservas.ParametrosReserva;
 import com.example.dominio.reservas.PoliticaCancelacion;
+import com.example.dominio.reservas.RangoFechas;
 import com.example.dominio.reservas.Reserva;
 import com.example.dominio.reservas.ServicioReserva;
 import com.example.dominio.usuarios.Huesped;
 
 class ServicioReservaTest {
 
-    private BaseDatosSingleton db;
+    private Repositorio db;
     private PasarelaPago pasarela;
     private SistemaNotificacion notificacion;
     private ServicioReserva servicio;
@@ -57,11 +59,12 @@ class ServicioReservaTest {
 
     @BeforeEach
     void setUp() {
-        db = BaseDatosSingleton.getInstance();
+        db = new RepositorioMemoria();
         db.limpiar();
+        
         pasarela = new PasarelaAdapter(new ServicioPasarelaExterno());
         notificacion = new SistemaNotificacion(new Email());
-        servicio = new ServicioReserva(pasarela, notificacion);
+        servicio = new ServicioReserva(pasarela, notificacion, db);
         huesped = new Huesped("H1", "Laura", "laura@mail.com", "123");
         inicio = new GregorianCalendar(2026, Calendar.SEPTEMBER, 1).getTime();
         fin = new GregorianCalendar(2026, Calendar.SEPTEMBER, 5).getTime();
@@ -78,7 +81,7 @@ class ServicioReservaTest {
         ParametrosReserva parametros = new ParametrosReserva(false, false,
                 new TarjetaMetodoPago("4111111111111111"));
 
-        Reserva reserva = servicio.reservar(inicio, fin, huesped, unidad, parametros);
+        Reserva reserva = servicio.reservar(new RangoFechas(inicio, fin), huesped, unidad, parametros);
 
         assertNotNull(reserva);
         assertEquals(120.0, reserva.getTotal(), 0.0);
@@ -129,13 +132,13 @@ class ServicioReservaTest {
     void r007_estaDisponible_unidadLibre() {
         Unidad unidad = new Unidad("U-1", "Casa", 100.0);
 
-        assertTrue(servicio.estaDisponible(unidad, inicio, fin));
+        assertTrue(servicio.estaDisponible(unidad, new RangoFechas(inicio, fin)));
     }
 
     @Test
     @DisplayName("R008 - Manejar unidad nula en disponibilidad")
     void r008_estaDisponible_unidadNula() {
-        assertFalse(servicio.estaDisponible(null, inicio, fin));
+        assertFalse(servicio.estaDisponible(null, new RangoFechas(inicio, fin)));
     }
 
     @Test
@@ -144,7 +147,7 @@ class ServicioReservaTest {
         Unidad unidad = new Unidad("U-1", "Casa", 100.0);
         unidad.cambiarEstado(new Mantenimiento());
 
-        assertFalse(servicio.estaDisponible(unidad, inicio, fin));
+        assertFalse(servicio.estaDisponible(unidad, new RangoFechas(inicio, fin)));
     }
 
     @Test
@@ -153,7 +156,7 @@ class ServicioReservaTest {
         Unidad unidad = new Unidad("U-1", "Casa", 100.0);
         unidad.cambiarEstado(new FueraDeServicio());
 
-        assertFalse(servicio.estaDisponible(unidad, inicio, fin));
+        assertFalse(servicio.estaDisponible(unidad, new RangoFechas(inicio, fin)));
     }
 
     @Test
@@ -165,14 +168,14 @@ class ServicioReservaTest {
         db.guardarPropiedad(propiedad);
 
         Huesped huespedA = new Huesped("H-A", "Laura", "laura@mail.com", "123");
-        Reserva existente = new Reserva(inicio, fin, huespedA, unidad);
+        Reserva existente = new Reserva(new RangoFechas(inicio, fin), huespedA, unidad);
         existente.setTotal(100.0);
         existente.confirmar();
         db.guardarReserva(existente);
 
         Huesped huespedB = new Huesped("H-B", "Pedro", "pedro@mail.com", "123");
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
-        boolean result = servicio.intentarReserva(inicio, fin, huespedB, unidad, 100.0, card);
+        boolean result = servicio.intentarReserva(new RangoFechas(inicio, fin), huespedB, unidad, 100.0, card);
 
         assertFalse(result);
     }
@@ -190,14 +193,14 @@ class ServicioReservaTest {
         prop2.añadirUnidad(unidad2);
         db.guardarPropiedad(prop2);
 
-        Reserva existente = new Reserva(inicio, fin, huesped, unidad1);
+        Reserva existente = new Reserva(new RangoFechas(inicio, fin), huesped, unidad1);
         existente.setTotal(100.0);
         existente.confirmar();
         db.guardarReserva(existente);
         huesped.registrarReserva(existente);
 
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
-        boolean result = servicio.intentarReserva(inicio, fin, huesped, unidad2, 100.0, card);
+        boolean result = servicio.intentarReserva(new RangoFechas(inicio, fin), huesped, unidad2, 100.0, card);
 
         assertFalse(result);
     }
@@ -214,7 +217,7 @@ class ServicioReservaTest {
         Date finExistente = new GregorianCalendar(2026, Calendar.SEPTEMBER, 3).getTime();
 
         Huesped huespedA = new Huesped("H-A", "Laura", "laura@mail.com", "123");
-        Reserva existente = new Reserva(inicioExistente, finExistente, huespedA, unidad);
+        Reserva existente = new Reserva(new RangoFechas(inicioExistente, finExistente), huespedA, unidad);
         existente.setTotal(100.0);
         existente.confirmar();
         db.guardarReserva(existente);
@@ -224,7 +227,7 @@ class ServicioReservaTest {
 
         Huesped huespedB = new Huesped("H-B", "Pedro", "pedro@mail.com", "123");
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
-        boolean result = servicio.intentarReserva(nuevaInicio, nuevaFin, huespedB, unidad, 100.0, card);
+        boolean result = servicio.intentarReserva(new RangoFechas(nuevaInicio, nuevaFin), huespedB, unidad, 100.0, card);
 
         assertFalse(result);
     }
@@ -239,7 +242,7 @@ class ServicioReservaTest {
         unidad.cambiarEstado(new Mantenimiento());
 
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
-        boolean result = servicio.intentarReserva(inicio, fin, huesped, unidad, 100.0, card);
+        boolean result = servicio.intentarReserva(new RangoFechas(inicio, fin), huesped, unidad, 100.0, card);
 
         assertFalse(result);
     }
@@ -253,7 +256,7 @@ class ServicioReservaTest {
         db.guardarPropiedad(propiedad);
 
         MetodoPago card = new TarjetaMetodoPago("4111111111111111");
-        boolean result = servicio.intentarReserva(inicio, fin, huesped, unidad, 100.0, card);
+        boolean result = servicio.intentarReserva(new RangoFechas(inicio, fin), huesped, unidad, 100.0, card);
 
         assertTrue(result);
         assertTrue(unidad.getEstado() instanceof Reservada);
@@ -271,7 +274,7 @@ class ServicioReservaTest {
     @DisplayName("R017 - Procesar pago fallido cuando la pasarela rechaza")
     void r017_procesarPago_pagoFallido() {
         PasarelaPago pasarelaFallida = pago -> false;
-        ServicioReserva servicioFallido = new ServicioReserva(pasarelaFallida, notificacion);
+        ServicioReserva servicioFallido = new ServicioReserva(pasarelaFallida, notificacion, db);
         Pago pago = new Pago(120.0, new TarjetaMetodoPago("4111111111111111"));
 
         assertFalse(servicioFallido.procesarPago(pago));
@@ -291,7 +294,7 @@ class ServicioReservaTest {
             montoCapturado[0] = pago.getMonto();
             return true;
         };
-        ServicioReserva servicioCaptura = new ServicioReserva(capturadora, notificacion);
+        ServicioReserva servicioCaptura = new ServicioReserva(capturadora, notificacion, db);
         Pago pago = new Pago(150.0, new TarjetaMetodoPago("4111111111111111"));
 
         assertTrue(servicioCaptura.procesarPago(pago));
@@ -317,8 +320,8 @@ class ServicioReservaTest {
     void r022_enviarConfirmacion_verificaContenidoMensaje() {
         CanalRegistrador canal = new CanalRegistrador();
         ServicioReserva servicioConCanal = new ServicioReserva(pasarela,
-                new SistemaNotificacion(canal));
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 100.0));
+                new SistemaNotificacion(canal), db);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 100.0));
 
         servicioConCanal.enviarConfirmacion(reserva, huesped);
 
@@ -369,7 +372,7 @@ class ServicioReservaTest {
     void r027_enviarConfirmacion_integration() {
         CanalRegistrador canal = new CanalRegistrador();
         ServicioReserva servicioConCanal = new ServicioReserva(pasarela,
-                new SistemaNotificacion(canal));
+                new SistemaNotificacion(canal), db);
 
         Propiedad propiedad = new Propiedad("Casa Azul", "Bogota", "No mascotas");
         Unidad unidad = new Unidad("U-100", "Casa", 120.0);
@@ -378,7 +381,7 @@ class ServicioReservaTest {
 
         ParametrosReserva parametros = new ParametrosReserva(false, false,
                 new TarjetaMetodoPago("4111111111111111"));
-        Reserva reserva = servicioConCanal.reservar(inicio, fin, huesped, unidad, parametros);
+        Reserva reserva = servicioConCanal.reservar(new RangoFechas(inicio, fin), huesped, unidad, parametros);
 
         assertNotNull(reserva);
         assertEquals(120.0, reserva.getTotal(), 0.0);
@@ -391,8 +394,8 @@ class ServicioReservaTest {
     void r028_enviarConfirmacion_usuarioNulo() {
         CanalRegistrador canal = new CanalRegistrador();
         ServicioReserva servicioConCanal = new ServicioReserva(pasarela,
-                new SistemaNotificacion(canal));
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 100.0));
+                new SistemaNotificacion(canal), db);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 100.0));
 
         servicioConCanal.enviarConfirmacion(reserva, null);
 
@@ -402,8 +405,8 @@ class ServicioReservaTest {
     @Test
     @DisplayName("R029 - Enviar confirmacion con notificacion nula no lanza excepcion")
     void r029_enviarConfirmacion_notificacionNula() {
-        ServicioReserva servicioSinNotif = new ServicioReserva(pasarela, null);
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 100.0));
+        ServicioReserva servicioSinNotif = new ServicioReserva(pasarela, null, db);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 100.0));
 
         assertDoesNotThrow(() -> servicioSinNotif.enviarConfirmacion(reserva, huesped));
     }
@@ -442,7 +445,7 @@ class ServicioReservaTest {
     @DisplayName("R032 - Cancelar con politica aplicada devuelve reembolso del 80%")
     void r032_cancelar_politicaAplicada() {
         PoliticaCancelacion politica = new PoliticaCancelacion("Estricta", 7, 0.2);
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 120.0));
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 120.0));
         reserva.setTotal(120.0);
         reserva.setPoliticaCancelacion(politica);
 
@@ -456,7 +459,7 @@ class ServicioReservaTest {
     @DisplayName("R033 - Cancelar sin importe devuelve reembolso 0")
     void r033_cancelar_totalCero() {
         PoliticaCancelacion politica = new PoliticaCancelacion("Estricta", 7, 0.2);
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 0.0));
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 0.0));
         reserva.setTotal(0.0);
         reserva.setPoliticaCancelacion(politica);
 
@@ -469,7 +472,7 @@ class ServicioReservaTest {
     @Test
     @DisplayName("R034 - Cancelar sin politica definida devuelve reembolso 0")
     void r034_cancelar_politicaNula() {
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 120.0));
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 120.0));
         reserva.setTotal(120.0);
 
         double reembolso = reserva.cancelar();
@@ -487,7 +490,7 @@ class ServicioReservaTest {
         propiedad.añadirUnidad(unidad);
         propiedad.setPoliticaCancelacion(politica);
 
-        Reserva reserva = new Reserva(inicio, fin, huesped, unidad);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, unidad);
 
         assertEquals(politica, reserva.getPoliticaCancelacion());
     }
@@ -495,7 +498,7 @@ class ServicioReservaTest {
     @Test
     @DisplayName("R036 - Obtener politica de cancelacion con unidad nula devuelve null")
     void r036_getPoliticaCancelacion_unidadNula() {
-        Reserva reserva = new Reserva(inicio, fin, huesped, null);
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, null);
 
         assertNull(reserva.getPoliticaCancelacion());
     }
@@ -503,7 +506,7 @@ class ServicioReservaTest {
     @Test
     @DisplayName("R037 - Confirmar reserva pasa de PENDIENTE a CONFIRMADA")
     void r037_confirmar_transicionAEstadoConfirmada() {
-        Reserva reserva = new Reserva(inicio, fin, huesped, new Unidad("U-1", "Casa", 100.0));
+        Reserva reserva = new Reserva(new RangoFechas(inicio, fin), huesped, new Unidad("U-1", "Casa", 100.0));
 
         assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
 

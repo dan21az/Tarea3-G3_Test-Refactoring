@@ -13,7 +13,8 @@ import org.junit.jupiter.api.Test;
 import com.example.Composite.CompPropiedad;
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
+import com.example.Singleton.RepositorioMemoria;
 import com.example.State.Disponible;
 import com.example.State.EstadoUnidad;
 import com.example.State.Mantenimiento;
@@ -21,12 +22,12 @@ import com.example.dominio.usuarios.Anfitrion;
 
 class GestionUnidadesReglasTest {
 
-    private BaseDatosSingleton db;
+    private Repositorio db;
     private Anfitrion anfitrion;
 
     @BeforeEach
     void setUp() {
-        db = BaseDatosSingleton.getInstance();
+        db = new RepositorioMemoria();
         db.limpiar();
         anfitrion = new Anfitrion("A1", "Juan Pérez", "juan@mail.com", "pass123");
     }
@@ -34,7 +35,7 @@ class GestionUnidadesReglasTest {
     private void registrarCasaAzul() {
         Propiedad prop = new Propiedad("Casa Azul", "Bogotá", "No mascotas");
         prop.añadirUnidad(new Unidad("U-100", "Casa", 90.0));
-        anfitrion.registrarPropiedad(prop);
+        anfitrion.registrarPropiedad(prop, db);
     }
 
     /* ---------- G001 - G007: Anfitrion (registro de propiedades) ---------- */
@@ -47,7 +48,7 @@ class GestionUnidadesReglasTest {
         List<String> servicios = Arrays.asList("WiFi", "Piscina");
 
         Propiedad result = anfitrion.registrarNuevaPropiedadConUnidades(
-                "Casa Azul", "Bogotá", "No mascotas", unidades, servicios);
+                "Casa Azul", "Bogotá", "No mascotas", unidades, servicios, db);
 
         assertNotNull(result);
         assertEquals("Casa Azul", result.getNombre());
@@ -63,7 +64,7 @@ class GestionUnidadesReglasTest {
         List<String> servicios = Arrays.asList("WiFi");
 
         Propiedad result = anfitrion.registrarNuevaPropiedadConUnidades(
-                "Casa Azul", "Bogotá", "No mascotas", unidades, servicios);
+                "Casa Azul", "Bogotá", "No mascotas", unidades, servicios, db);
 
         assertNull(result);
         assertTrue(anfitrion.getPropiedades().isEmpty());
@@ -76,7 +77,7 @@ class GestionUnidadesReglasTest {
         List<String> servicios = Arrays.asList("WiFi");
 
         Propiedad result = anfitrion.registrarNuevaPropiedadConUnidades(
-                "Casa Azul", "Bogotá", "No mascotas", null, servicios);
+                "Casa Azul", "Bogotá", "No mascotas", null, servicios, db);
 
         assertNull(result);
         assertTrue(anfitrion.getPropiedades().isEmpty());
@@ -90,7 +91,7 @@ class GestionUnidadesReglasTest {
         List<String> servicios = Arrays.asList("WiFi");
 
         Propiedad result = anfitrion.registrarNuevaPropiedadConUnidades(
-                "Casa Azul", "Bogotá", "No mascotas", unidades, servicios);
+                "Casa Azul", "Bogotá", "No mascotas", unidades, servicios, db);
 
         assertNull(result);
         assertTrue(anfitrion.getPropiedades().isEmpty());
@@ -99,7 +100,7 @@ class GestionUnidadesReglasTest {
     @Test
     @DisplayName("G005 - No registrar propiedad nula")
     void g005_registrarPropiedad_nula() {
-        anfitrion.registrarPropiedad(null);
+        anfitrion.registrarPropiedad(null, db);
 
         assertTrue(anfitrion.getPropiedades().isEmpty());
         assertTrue(db.getCatalogo().isEmpty());
@@ -111,7 +112,7 @@ class GestionUnidadesReglasTest {
         Propiedad prop = new Propiedad("Casa Azul", "Bogotá", "No mascotas");
         assertFalse(prop.esValida());
 
-        anfitrion.registrarPropiedad(prop);
+        anfitrion.registrarPropiedad(prop, db);
 
         assertTrue(anfitrion.getPropiedades().isEmpty());
         assertTrue(db.getCatalogo().isEmpty());
@@ -123,7 +124,7 @@ class GestionUnidadesReglasTest {
         Propiedad prop = new Propiedad("Casa Azul", "Bogotá", "No mascotas");
         prop.añadirUnidad(new Unidad("U-100", "Casa", 90.0));
 
-        anfitrion.registrarPropiedad(prop);
+        anfitrion.registrarPropiedad(prop, db);
 
         assertEquals(1, anfitrion.getPropiedades().size());
         assertTrue(anfitrion.getPropiedades().contains(prop));
