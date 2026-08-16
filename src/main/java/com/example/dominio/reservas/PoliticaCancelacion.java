@@ -1,8 +1,7 @@
 package com.example.dominio.reservas;
 
-import java.util.Date;
-
 public class PoliticaCancelacion {
+
     private String nombre;
     private int diasAntelacion;
     private double porcentajeReembolso;
@@ -13,17 +12,20 @@ public class PoliticaCancelacion {
         this.porcentajeReembolso = porcentajeReembolso;
     }
 
-    public String getNombre() { return nombre; }
-    public int getDiasAntelacion() { return diasAntelacion; }
-    public double getPorcentajeReembolso() { return porcentajeReembolso; }
+    public String getNombre() {
+        return nombre;
+    }
 
-    public double calcularReembolso(Reserva reserva, Date fechaCancelacion) {
-        long diff = reserva.getFechaInicio().getTime() - fechaCancelacion.getTime();
-        long diasAntes = diff / (1000 * 60 * 60 * 24);
+    public int getDiasAntelacion() {
+        return diasAntelacion;
+    }
 
-        if (diasAntes >= diasAntelacion) {
-            return reserva.getTotal() * porcentajeReembolso;
-        }
-        return 0.0;
+    public double getPorcentajePenalizacion() {
+        return porcentajeReembolso;
+    }
+
+    public double calcularReembolso(double total) {
+        if (total <= 0.0) return 0.0;
+        return total * (1 - porcentajeReembolso);
     }
 }

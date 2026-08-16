@@ -2,14 +2,15 @@ package com.example.dominio.usuarios;
 
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
 import com.example.dominio.CriterioBusqueda;
 import com.example.dominio.incidentes.Incidente;
 import com.example.dominio.reservas.Reserva;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import com.example.dominio.reservas.RangoFechas;
+import com.example.dominio.CriterioBusquedaEvaluator;
 
 public class Huesped extends Usuario {
 
@@ -20,24 +21,26 @@ public class Huesped extends Usuario {
         this.reservas = new ArrayList<>();
     }
 
-    public List<Propiedad> buscarPropiedad(CriterioBusqueda criterio) {
+    public List<Propiedad> buscarPropiedad(CriterioBusqueda criterio, Repositorio repositorio) {
         System.out.println(nombre + " está buscando propiedades...");
-        BaseDatosSingleton db = BaseDatosSingleton.getInstance();
         List<Propiedad> resultados = new ArrayList<>();
+        CriterioBusquedaEvaluator evaluador = new CriterioBusquedaEvaluator();
 
-        for (Propiedad propiedad : db.getCatalogo()) {
-            if (propiedad.coincide(criterio)) {
-                resultados.add(propiedad);
+        if (repositorio != null) {
+            for (Propiedad propiedad : repositorio.getCatalogo()) {
+                if (evaluador.coincide(propiedad, criterio)) {
+                    resultados.add(propiedad);
+                }
             }
         }
 
         return resultados;
     }
 
-    public Reserva realizarReserva(Unidad unidad, Date inicio, Date fin) {
+    public Reserva realizarReserva(Unidad unidad, RangoFechas fechas) {
         System.out.println(nombre + " está realizando una reserva.");
 
-        Reserva reserva = new Reserva(inicio, fin, this, unidad);
+        Reserva reserva = new Reserva(fechas, this, unidad);
         reservas.add(reserva);
 
         return reserva;

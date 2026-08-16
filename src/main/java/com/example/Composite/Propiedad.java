@@ -27,10 +27,10 @@ public class Propiedad implements CompPropiedad {
         this.children = new ArrayList<>();
     }
 
-    public void añadirUnidad(CompPropiedad unidad) {
-        children.add(unidad);
-        if (unidad instanceof Unidad u) {
-            u.setPropiedad(this);
+    public void añadirUnidad(CompPropiedad componente) {
+        children.add(componente);
+        if (componente instanceof Unidad unidad) {
+            unidad.setPropiedad(this);
         }
         System.out.println("Unidad añadida a propiedad " + nombre);
     }
@@ -119,57 +119,7 @@ public class Propiedad implements CompPropiedad {
         }
     }
 
-    public boolean coincide(CriterioBusqueda criterio) {
-        if (criterio == null) {
-            return true;
-        }
-
-        return coincideUbicacion(criterio)
-                && coincidePrecio(criterio)
-                && coincideTipo(criterio)
-                && coincideServicios(criterio);
-    }
-
-    private boolean coincideUbicacion(CriterioBusqueda criterio) {
-        return criterio.getUbicacion() == null || criterio.getUbicacion().isBlank()
-                || (direccion != null && direccion.toLowerCase().contains(criterio.getUbicacion().toLowerCase()));
-    }
-
-    private boolean coincidePrecio(CriterioBusqueda criterio) {
-        if (criterio.getPrecioMin() > 0 || criterio.getPrecioMax() > 0) {
-            double precioMinUnidad = Double.MAX_VALUE;
-            for (CompPropiedad child : children) {
-                if (child instanceof Unidad unidad) {
-                    precioMinUnidad = Math.min(precioMinUnidad, unidad.getPrecio());
-                }
-            }
-            if (precioMinUnidad == Double.MAX_VALUE) {
-                return false;
-            }
-            return precioMinUnidad >= criterio.getPrecioMin()
-                    && (criterio.getPrecioMax() <= 0 || precioMinUnidad <= criterio.getPrecioMax());
-        }
-        return true;
-    }
-
-    private boolean coincideTipo(CriterioBusqueda criterio) {
-        return criterio.getTipoAlojamiento() == null || criterio.getTipoAlojamiento().isBlank()
-                || tieneTipo(criterio.getTipoAlojamiento());
-    }
-
-    private boolean coincideServicios(CriterioBusqueda criterio) {
-        return criterio.getServicios() == null || criterio.getServicios().isEmpty()
-                || servicios.stream().anyMatch(criterio.getServicios()::contains);
-    }
-
-    private boolean tieneTipo(String tipo) {
-        for (CompPropiedad child : children) {
-            if (child instanceof Unidad unidad && unidad.getTipo().equalsIgnoreCase(tipo)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // Search methods moved to CriterioBusquedaEvaluator
 
     public boolean esValida() {
         return children != null && children.stream().anyMatch(c -> c instanceof Unidad);

@@ -6,7 +6,7 @@ import java.util.List;
 import com.example.Composite.CompPropiedad;
 import com.example.Composite.Propiedad;
 import com.example.Composite.Unidad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
 import com.example.State.EstadoUnidad;
 import com.example.dominio.incidentes.Incidente;
 import com.example.dominio.reservas.Reserva;
@@ -20,14 +20,16 @@ public class Anfitrion extends Usuario {
         propiedades = new ArrayList<>();
     }
 
-    public void registrarPropiedad(Propiedad propiedad) {
+    public void registrarPropiedad(Propiedad propiedad, Repositorio repositorio) {
         if (propiedad == null || !propiedad.esValida()) {
             System.out.println("No se puede registrar una propiedad sin unidades.");
             return;
         }
 
         propiedades.add(propiedad);
-        BaseDatosSingleton.getInstance().guardarPropiedad(propiedad);
+        if (repositorio != null) {
+            repositorio.guardarPropiedad(propiedad);
+        }
         System.out.println(nombre + " registró una nueva propiedad.");
     }
 
@@ -36,7 +38,7 @@ public class Anfitrion extends Usuario {
     }
 
     public Propiedad registrarNuevaPropiedadConUnidades(String nombre, String direccion, String reglas,
-                            List<CompPropiedad> unidades, List<String> servicios) {
+                            List<CompPropiedad> unidades, List<String> servicios, Repositorio repositorio) {
         if (unidades == null || unidades.isEmpty()) {
             System.out.println("La propiedad no puede registrarse porque debe incluir al menos una unidad.");
             return null;
@@ -61,7 +63,7 @@ public class Anfitrion extends Usuario {
             return null;
         }
 
-        registrarPropiedad(nuevaPropiedad);
+        registrarPropiedad(nuevaPropiedad, repositorio);
         return nuevaPropiedad;
     }
 
@@ -110,12 +112,12 @@ public class Anfitrion extends Usuario {
         System.out.println("Estado de unidad actualizado.");
     }
 
-    public List<Incidente> revisarIncidentesDeSusPropiedades() {
+    public List<Incidente> revisarIncidentesDeSusPropiedades(Repositorio repositorio) {
         List<Incidente> resultado = new ArrayList<>();
-        BaseDatosSingleton db = BaseDatosSingleton.getInstance();
+        if (repositorio == null) return resultado;
 
         for (Propiedad propiedad : propiedades) {
-            resultado.addAll(db.buscarIncidentesPorPropiedad(propiedad));
+            resultado.addAll(repositorio.buscarIncidentesPorPropiedad(propiedad));
         }
 
         return resultado;

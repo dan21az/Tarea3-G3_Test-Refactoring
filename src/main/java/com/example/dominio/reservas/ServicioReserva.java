@@ -6,7 +6,7 @@ import com.example.Composite.CompPropiedad;
 import com.example.Composite.Unidad;
 import com.example.Decorator.TarifaExtra;
 import com.example.Decorator.TarifaSeguridad;
-import com.example.Singleton.BaseDatosSingleton;
+import com.example.Singleton.Repositorio;
 import com.example.Strategy.notificacion.SistemaNotificacion;
 import com.example.Strategy.pagos.MetodoPago;
 import com.example.Strategy.pagos.Pago;
@@ -19,68 +19,45 @@ public class ServicioReserva {
 
     private PasarelaPago pasarela;
     private SistemaNotificacion notificacion;
+    private com.example.Singleton.Repositorio repositorio;
 
     public ServicioReserva(PasarelaPago pasarela,
-                           SistemaNotificacion notificacion) {
+                           SistemaNotificacion notificacion,
+                           com.example.Singleton.Repositorio repositorio) {
+
         this.pasarela = pasarela;
         this.notificacion = notificacion;
+        this.repositorio = repositorio;
     }
 
-    // ✅ Método cancelar integrado con PoliticaCancelacion
-    public double cancelar(Reserva reserva, Date fechaCancelacion) {
-        reserva.marcarCancelada();
-        PoliticaCancelacion politica = reserva.getPoliticaCancelacion();
-        double reembolso = (politica != null) ? politica.calcularReembolso(reserva, fechaCancelacion) : 0.0;
-
-        System.out.println("Reserva cancelada. Reembolso: " + reembolso);
-        return reembolso;
-    }
-
-    public Reserva reservar(Date inicio,
-                            Date fin,
+    public Reserva reservar(RangoFechas fechas,
                             Huesped huesped,
                             Unidad unidad,
                             ParametrosReserva parametros) {
 
-        double totalCalculado = calcularTotalConExtras(unidad, parametros.aplicarTarifaExtra(), parametros.aplicarDepositoSeguridad());
+        double totalCalculado = calcularTotal(unidad, parametros);
         System.out.println("Iniciando proceso de reserva...");
-        boolean creada = intentarReserva(inicio, fin, huesped, unidad, totalCalculado, parametros.metodoPago());
+        boolean creada = intentarReserva(fechas, huesped, unidad, totalCalculado, parametros.metodoPago());
         if (!creada) {
             return null;
         }
-        return obtenerReservaActiva(huesped, unidad, inicio, fin, totalCalculado);
+        return crearReservaConfirmada(huesped, unidad, fechas, totalCalculado);
     }
 
-    public boolean intentarReserva(Date inicio,
-                                   Date fin,
+    private double calcularTotal(Unidad unidad, ParametrosReserva parametros) {
+        return calcularTotalConExtras(unidad, parametros.aplicarTarifaExtra(), parametros.aplicarDepositoSeguridad());
+    }
+
+    public boolean intentarReserva(RangoFechas fechas,
                                    Huesped huesped,
                                    Unidad unidad,
                                    double totalCalculado,
                                    MetodoPago metodoPago) {
-        if (unidad == null || !unidadReservable(unidad, inicio, fin)) {
-            System.out.println("La unidad no está disponible para esas fechas.");
+        if (!validarDisponibilidad(fechas, huesped, unidad)) {
             return false;
         }
 
-        if (existeConflictoReserva(unidad, inicio, fin)) {
-            System.out.println("Ya existe una reserva para esas fechas.");
-            return false;
-        }
-
-        if (existeConflictoReservaHuesped(huesped, inicio, fin)) {
-            System.out.println("El huésped ya tiene una reserva activa para esas fechas.");
-            return false;
-        }
-
-        Reserva reserva = new Reserva(inicio, fin, huesped, unidad);
-        reserva.setTotal(totalCalculado);
-        reserva.confirmar();
-
-        if (unidad != null && unidad.getPropiedad() != null) {
-            reserva.setPoliticaCancelacion(unidad.getPropiedad().getPoliticaCancelacion());
-        }
-
-        unidad.ocupar();
+        Reserva reserva = crearReservaBase(fechas, huesped, unidad, totalCalculado);
 
         Pago pago = new Pago(reserva.getTotal(), metodoPago);
         boolean pagoExitoso = procesarPago(pago);
@@ -89,22 +66,59 @@ public class ServicioReserva {
             return false;
         }
 
-        BaseDatosSingleton db = BaseDatosSingleton.getInstance();
-        db.guardarReserva(reserva);
-        if (huesped != null) {
-            huesped.registrarReserva(reserva);
-        }
+        persistirReserva(reserva, huesped);
 
         enviarConfirmacion(reserva, huesped);
         return true;
     }
 
-    private Reserva obtenerReservaActiva(Huesped huesped, Unidad unidad, Date inicio, Date fin, double total) {
+    private boolean validarDisponibilidad(RangoFechas fechas, Huesped huesped, Unidad unidad) {
+        if (unidad == null || !unidadReservable(unidad, fechas)) {
+            System.out.println("La unidad no está disponible para esas fechas.");
+            return false;
+        }
+
+        if (existeConflictoReserva(unidad, fechas)) {
+            System.out.println("Ya existe una reserva para esas fechas.");
+            return false;
+        }
+
+        if (existeConflictoReservaHuesped(huesped, fechas)) {
+            System.out.println("El huésped ya tiene una reserva activa para esas fechas.");
+            return false;
+        }
+        return true;
+    }
+
+    private Reserva crearReservaBase(RangoFechas fechas, Huesped huesped, Unidad unidad, double totalCalculado) {
+        Reserva reserva = new Reserva(fechas, huesped, unidad);
+        reserva.setTotal(totalCalculado);
+        reserva.confirmar();
+
+        if (unidad != null) {
+            com.example.Composite.Propiedad propiedad = repositorio.buscarPropiedadPorUnidad(unidad);
+            if (propiedad != null) {
+                reserva.setPoliticaCancelacion(propiedad.getPoliticaCancelacion());
+            }
+        }
+
+        unidad.ocupar();
+        return reserva;
+    }
+
+    private void persistirReserva(Reserva reserva, Huesped huesped) {
+        repositorio.guardarReserva(reserva);
+        if (huesped != null) {
+            huesped.registrarReserva(reserva);
+        }
+    }
+
+    private Reserva crearReservaConfirmada(Huesped huesped, Unidad unidad, RangoFechas fechas, double total) {
         if (huesped == null || unidad == null) {
             return null;
         }
 
-        Reserva reserva = new Reserva(inicio, fin, huesped, unidad);
+        Reserva reserva = new Reserva(fechas, huesped, unidad);
         reserva.setTotal(total);
         return reserva;
     }
@@ -127,10 +141,9 @@ public class ServicioReserva {
         return total;
     }
 
-    private boolean existeConflictoReserva(Unidad unidad, Date inicio, Date fin) {
-        BaseDatosSingleton db = BaseDatosSingleton.getInstance();
-        for (Reserva reserva : db.getReservas()) {
-            if (reserva.getUnidad() == unidad && seSolapan(inicio, fin, reserva.getFechaInicio(), reserva.getFechaFin())) {
+    private boolean existeConflictoReserva(Unidad unidad, RangoFechas fechas) {
+        for (Reserva reserva : repositorio.getReservas()) {
+            if (reserva.getUnidad() == unidad && fechas.seSolapaCon(reserva.getRangoFechas())) {
                 return true;
             }
         }
@@ -138,27 +151,32 @@ public class ServicioReserva {
     }
 
     public boolean procesarPago(Pago pago) {
+
         System.out.println("Procesando pago...");
+
         return pasarela.procesarTransaccion(pago);
     }
 
     public void enviarConfirmacion(Reserva reserva, Usuario usuario) {
+
         System.out.println("Enviando confirmación...");
+
         if (notificacion != null && usuario != null) {
-            notificacion.enviarMensaje(usuario, "Tu reserva fue confirmada");
+            notificacion.enviarMensaje(usuario,
+                    "Tu reserva fue confirmada");
         }
     }
 
-    public boolean estaDisponible(Unidad unidad, Date inicio, Date fin) {
+    public boolean estaDisponible(Unidad unidad, RangoFechas fechas) {
         if (unidad == null) {
             return false;
         }
-        if (!unidadReservable(unidad, inicio, fin)) {
+        if (!unidadReservable(unidad, fechas)) {
             System.out.println("La unidad " + unidad.getIdUnidad()
                     + " no se puede reservar para el rango solicitado.");
             return false;
         }
-        if (existeConflictoReserva(unidad, inicio, fin)) {
+        if (existeConflictoReserva(unidad, fechas)) {
             System.out.println("La unidad " + unidad.getIdUnidad()
                     + " ya está reservada para el rango de fechas solicitado.");
             return false;
@@ -166,7 +184,7 @@ public class ServicioReserva {
         return true;
     }
 
-    private boolean unidadReservable(Unidad unidad, Date inicio, Date fin) {
+    private boolean unidadReservable(Unidad unidad, RangoFechas fechas) {
         if (unidad == null) {
             return false;
         }
@@ -182,46 +200,46 @@ public class ServicioReserva {
         }
 
         if (estado instanceof Reservada || estado instanceof Ocupada) {
-            return !existeConflictoReserva(unidad, inicio, fin);
+            return !existeConflictoReserva(unidad, fechas);
         }
 
         return false;
     }
 
-    private boolean existeConflictoReservaHuesped(Huesped huesped, Date inicio, Date fin) {
-        if (huesped == null || inicio == null || fin == null) {
+    private boolean existeConflictoReservaHuesped(Huesped huesped, RangoFechas fechas) {
+        if (huesped == null || fechas == null) {
             return false;
         }
 
-        for (Reserva reserva : huesped.historialReservas()) {
-            if (!esReservaActivaValida(reserva, huesped)) {
-                continue;
-            }
-            if (seSolapan(inicio, fin, reserva.getFechaInicio(), reserva.getFechaFin())) {
-                return true;
-            }
-        }
-
-        BaseDatosSingleton db = BaseDatosSingleton.getInstance();
-        for (Reserva reserva : db.getReservas()) {
-            if (!esReservaActivaValida(reserva, huesped)) {
-                continue;
-            }
-            if (seSolapan(inicio, fin, reserva.getFechaInicio(), reserva.getFechaFin())) {
+        for (Reserva reserva : buscarReservasActivasDeHuesped(huesped)) {
+            if (fechas.seSolapaCon(reserva.getRangoFechas())) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private java.util.List<Reserva> buscarReservasActivasDeHuesped(Huesped huesped) {
+        java.util.List<Reserva> activas = new java.util.ArrayList<>();
+        if (huesped != null) {
+            for (Reserva reserva : huesped.historialReservas()) {
+                if (esReservaActivaValida(reserva, huesped)) {
+                    activas.add(reserva);
+                }
+            }
+            for (Reserva reserva : repositorio.getReservas()) {
+                if (esReservaActivaValida(reserva, huesped) && !activas.contains(reserva)) {
+                    activas.add(reserva);
+                }
+            }
+        }
+        return activas;
     }
 
     private boolean esReservaActivaValida(Reserva reserva, Huesped huesped) {
         return reserva.getUnidad() != null
                 && reserva.getHuesped() == huesped
                 && (reserva.getEstado() == EstadoReserva.PENDIENTE || reserva.getEstado() == EstadoReserva.CONFIRMADA);
-    }
-
-    private boolean seSolapan(Date inicioA, Date finA, Date inicioB, Date finB) {
-        return !(finA.before(inicioB) || inicioA.after(finB));
     }
 }

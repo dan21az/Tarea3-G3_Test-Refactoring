@@ -1,5 +1,5 @@
 package com.example.Composite;
-import java.util.Date;
+import com.example.dominio.reservas.RangoFechas;
 
 import com.example.State.*;
 
@@ -24,7 +24,7 @@ public class Unidad implements CompPropiedad {
         System.out.println("Estado cambiado en unidad " + idUnidad);
     }
 
-    public boolean esDisponible(Date inicio, Date fin) {
+    public boolean esDisponible(RangoFechas fechas) {
         System.out.println("Verificando disponibilidad...");
 
         return estado instanceof Disponible;
